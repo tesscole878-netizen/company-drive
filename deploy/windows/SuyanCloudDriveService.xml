@@ -1,0 +1,23 @@
+<service>
+  <id>SuyanCloudDrive</id>
+  <name>苏盐新云盘</name>
+  <description>苏盐新云盘文件共享与 WebDAV 服务</description>
+  <executable>%BASE%\runtime\python.exe</executable>
+  <arguments>-u "%BASE%\app\run.py"</arguments>
+  <workingdirectory>%BASE%\app</workingdirectory>
+  <env name="DRIVE_DATA_DIR" value="D:\CompanyDriveNAS" />
+  <env name="DRIVE_STATE_DIR" value="%BASE%\state" />
+  <env name="DRIVE_HOST" value="0.0.0.0" />
+  <env name="DRIVE_PORT" value="8765" />
+  <env name="PYTHONUTF8" value="1" />
+  <env name="TEMP" value="%BASE%\temp" />
+  <env name="TMP" value="%BASE%\temp" />
+  <serviceaccount><domain>NT AUTHORITY</domain><user>LocalService</user></serviceaccount>
+  <startmode>Automatic</startmode>
+  <delayedAutoStart />
+  <onfailure action="restart" delay="10 sec" />
+  <resetfailure>1 hour</resetfailure>
+  <stoptimeout>60 sec</stoptimeout>
+  <logpath>%BASE%\logs</logpath>
+  <log mode="roll-by-size"><sizeThreshold>10240</sizeThreshold><keepFiles>8</keepFiles></log>
+</service>

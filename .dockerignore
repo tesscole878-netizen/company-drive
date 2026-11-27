@@ -1,0 +1,14 @@
+.venv
+__pycache__
+.pytest_cache
+data
+state
+.env
+storage.local.json
+backups
+tests
+work
+releases
+license-issuer
+license-issuer*
+docs/本地试用说明.md

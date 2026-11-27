@@ -1,0 +1,5 @@
+{% extends "react_app.html" %}
+{% block extra_script %}
+{{ block.super }}
+<script defer src="{{ MEDIA_URL }}custom/suyan-file-changes.js?v=20261127-directory-changes" data-endpoint="/api/v2.1/suyan-file-changes/"></script>
+{% endblock %}

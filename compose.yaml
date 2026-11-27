@@ -1,0 +1,25 @@
+services:
+  drive:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "${DRIVE_BIND:-127.0.0.1}:8765:8765"
+    environment:
+      DRIVE_MAX_FILE_GB: "${DRIVE_MAX_FILE_GB:-100}"
+      DRIVE_SECURE_COOKIE: "${DRIVE_SECURE_COOKIE:-0}"
+      DRIVE_TRUST_PROXY: "${DRIVE_TRUST_PROXY:-0}"
+      OFFICE_PUBLIC_URL: "${OFFICE_PUBLIC_URL:-}"
+      OFFICE_DRIVE_URL: "${OFFICE_DRIVE_URL:-}"
+      OFFICE_RESULT_URL: "${OFFICE_RESULT_URL:-}"
+      OFFICE_JWT_SECRET: "${OFFICE_JWT_SECRET:-}"
+      OFFICE_JWT_HEADER: "${OFFICE_JWT_HEADER:-Authorization}"
+    volumes:
+      - "${NAS_DATA_PATH:-./data}:/data"
+      - "${LOCAL_STATE_PATH:-./state}:/state"
+    init: true
+    stop_grace_period: 60s
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8765/api/status', timeout=5)"]
+      interval: 30s
+      timeout: 8s
+      retries: 3

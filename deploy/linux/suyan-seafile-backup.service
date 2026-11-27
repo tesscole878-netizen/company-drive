@@ -1,0 +1,14 @@
+[Unit]
+Description=Back up Seafile databases and objects and verify the restore
+After=docker.service
+RequiresMountsFor=/data/seafile-data /data/suyan-backups
+
+[Service]
+Type=oneshot
+UMask=0077
+Nice=15
+CPUQuota=100%
+MemoryMax=2G
+IOSchedulingClass=idle
+TimeoutStartSec=infinity
+ExecStart=/usr/bin/python3 /opt/suyan-cloud-drive/operations/backup_seafile.py

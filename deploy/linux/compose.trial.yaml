@@ -1,0 +1,139 @@
+name: suyan-cloud-drive-trial
+
+services:
+  drive:
+    image: suyan-cloud-drive:trial
+    build:
+      context: ./app
+      args:
+        PYTHON_IMAGE: public.ecr.aws/docker/library/python:3.12-slim
+    restart: unless-stopped
+    network_mode: service:office
+    depends_on:
+      office:
+        condition: service_healthy
+    env_file: ./private/drive.env
+    environment:
+      DRIVE_DATA_DIR: /data
+      DRIVE_STATE_DIR: /state
+      DRIVE_HOST: 0.0.0.0
+      DRIVE_PORT: "8765"
+      DRIVE_SECURE_COOKIE: "1"
+      DRIVE_TRUST_PROXY: "1"
+      DRIVE_IDENTITY_CREDENTIAL_FILE: /private/identity-service.json
+      DRIVE_IDENTITY_MERGES_FILE: /private/approved-merges.json
+      DRIVE_IDENTITY_READ_ONLY: "1"
+      OFFICE_PUBLIC_URL: https://192.168.80.252:8444
+      OFFICE_DRIVE_URL: http://127.0.0.1:8765
+      OFFICE_RESULT_URL: http://127.0.0.1
+      LEGACY_PREVIEW_URL: http://127.0.0.1
+      LEGACY_PREVIEW_LOOPBACK_CONVERTER: "1"
+    volumes:
+      - /data/suyan-cloud-drive-trial:/data
+      - ./state:/state
+      - ./private:/private:ro
+    cpus: 2
+    mem_limit: 2g
+    init: true
+    stop_grace_period: 60s
+    logging: &logging
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8765/api/status', timeout=5)"]
+      interval: 30s
+      timeout: 8s
+      retries: 3
+
+  portal:
+    image: suyan-cloud-drive:trial
+    command: [python, run_legacy_portal.py]
+    restart: unless-stopped
+    network_mode: service:office
+    depends_on:
+      drive:
+        condition: service_healthy
+    env_file: ./private/drive.env
+    environment:
+      LEGACY_PORTAL_HOST: 127.0.0.1
+      LEGACY_PORTAL_ALLOWED_HOSTS: 192.168.80.252,localhost,127.0.0.1
+      LEGACY_PORTAL_PORT: "9443"
+      LEGACY_PORTAL_TRUST_PROXY: "1"
+      LEGACY_PORTAL_CERT: /tls/portal.pem
+      LEGACY_PORTAL_KEY: /tls/portal-key.pem
+      LEGACY_UNIFIED_IDENTITY: "1"
+      LEGACY_PREVIEW_URL: http://127.0.0.1
+      LEGACY_PREVIEW_LOOPBACK_CONVERTER: "1"
+    volumes:
+      - ./tls:/tls:ro
+    cpus: 1
+    mem_limit: 512m
+    init: true
+    logging: *logging
+    healthcheck:
+      test: [CMD, python, -c, "import ssl,urllib.request; c=ssl.create_default_context(cafile='/tls/root.pem'); urllib.request.urlopen('https://127.0.0.1:9443/health',context=c,timeout=5)"]
+      interval: 30s
+      timeout: 8s
+      retries: 3
+
+  gateway:
+    # Use the cached image's Nginx binary without starting its document services.
+    image: suyan/onlyoffice:latest
+    entrypoint: [/usr/sbin/nginx]
+    command: [-g, "daemon off;"]
+    pull_policy: never
+    restart: unless-stopped
+    network_mode: service:office
+    depends_on:
+      portal:
+        condition: service_healthy
+    volumes:
+      - ./tls:/tls:ro
+      - ./gateway.conf:/etc/nginx/nginx.conf:ro
+    cpus: 0.5
+    mem_limit: 128m
+    logging: *logging
+    healthcheck:
+      test: [CMD-SHELL, "nginx -t -q && kill -0 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  office:
+    image: suyan/onlyoffice:latest
+    pull_policy: never
+    restart: unless-stopped
+    env_file: ./private/office.env
+    environment:
+      JWT_ENABLED: "true"
+      JWT_HEADER: Authorization
+      ALLOW_PRIVATE_IP_ADDRESS: "true"
+      ALLOW_META_IP_ADDRESS: "false"
+      SSL_CERTIFICATE_PATH: /trial-tls/portal.pem
+      SSL_KEY_PATH: /trial-tls/portal-key.pem
+      SSL_VERIFY_CLIENT: "off"
+      PLUGINS_ENABLED: "false"
+    ports:
+      - "192.168.80.252:8443:8443"
+      - "192.168.80.252:8444:443"
+    volumes:
+      - ./tls:/trial-tls:ro
+      - ./office/logs:/var/log/onlyoffice
+      - ./office/data:/var/www/onlyoffice/Data
+      - ./office/lib:/var/lib/onlyoffice
+      - ./office/db:/var/lib/postgresql
+      - ./office/rabbitmq:/var/lib/rabbitmq
+      - ./office/redis:/var/lib/redis
+    cpus: 2
+    mem_limit: 4g
+    shm_size: 256m
+    stop_grace_period: 60s
+    logging: *logging
+    healthcheck:
+      test: [CMD, curl, -fsS, http://127.0.0.1/healthcheck]
+      interval: 30s
+      timeout: 8s
+      retries: 5
+      start_period: 180s

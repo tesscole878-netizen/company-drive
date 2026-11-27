@@ -1,0 +1,22 @@
+<service>
+  <id>SuyanLegacyPortal</id>
+  <name>苏盐新云盘 HTTPS</name>
+  <description>使用原 Seafile 账号浏览和下载资料</description>
+  <executable>%BASE%\..\runtime\python.exe</executable>
+  <arguments>-u "%BASE%\app\run_legacy_portal.py"</arguments>
+  <workingdirectory>%BASE%\app</workingdirectory>
+  <env name="LEGACY_PORTAL_HOST" value="192.168.70.82" />
+  <env name="LEGACY_PORTAL_PORT" value="443" />
+  <env name="LEGACY_PORTAL_CERT" value="%BASE%\tls\portal.pem" />
+  <env name="LEGACY_PORTAL_KEY" value="%BASE%\tls\portal-key.pem" />
+  <env name="LEGACY_SEAFILE_URL" value="https://192.168.80.252" />
+  <env name="LEGACY_SEAFILE_CERT_SHA256" value="49b971a0b1861d3ea7150d025d4404582b82393b89c6a029ee518c4c181a4be3" />
+  <env name="PYTHONUTF8" value="1" />
+  <env name="LEGACY_PREVIEW_DOCS_CONFIG" value="D:\Services\OnlyOfficeDocs\config\local.json" />
+  <serviceaccount><domain>NT AUTHORITY</domain><user>LocalService</user></serviceaccount>
+  <startmode>Automatic</startmode>
+  <delayedAutoStart />
+  <onfailure action="restart" delay="10 sec" />
+  <logpath>%BASE%\logs</logpath>
+  <log mode="roll-by-size"><sizeThreshold>10240</sizeThreshold><keepFiles>4</keepFiles></log>
+</service>

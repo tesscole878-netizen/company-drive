@@ -1,0 +1,44 @@
+# 项目开发位置
+
+- 本项目唯一开发根目录是 `D:\IdeaProjects\company-drive`。后续读取、修改、测试和构建均以此目录为工作目录。
+- 云盘服务与网页：`drive/`；Windows 连接助手：`client/`；测试：`tests/`。
+- Python 环境使用根目录 `.venv/`，Windows 命令为 `.venv\Scripts\python.exe`。不要使用 `work/cloud-venv` 中迁移保留的旧环境。
+- Windows 安装包与便携包放在 `releases/windows/`；源码部署包放在 `releases/`。
+- 临时脚本、构建产物、协议测试工具与本地试用数据放在 `work/`；不得将 `work/`、`.venv/`、运行数据库或个人凭证打进发布包。
+- 正式服务已于 2026-11-12 从 82 切换至 `https://192.168.80.252:8443`。Linux 部署目录 `/opt/suyan-cloud-drive`，Compose 项目名 `suyan-cloud-drive`，模板为 `deploy/linux/compose.production.yaml`。正式数据库和服务器密钥在 `state/`，正式文件直接使用 `/data/suyan-cloud-drive`，应用 UID/GID 为 19555，保持原文件属主。原 Seafile 的文件、数据库和容器继续由原服务管理。
+- 82 的 `SuyanCloudDrive` 和 `SuyanLegacyPortal` 已停止并禁用自动启动，原程序和数据库保留用于回退。新 Windows 服务 `SuyanCloudRedirect` 自动运行，将原 HTTP 8765 和 HTTPS 443 的浏览器访问跳转至正式地址，并拒绝旧入口写入。其目录为 `D:\Services\SuyanCloudDrive\cutover-redirect`。回退前需先停止 Linux 写入并同步最新状态，避免两个独立数据库同时管理同一目录。
+- 切换备份位于 Linux `/opt/suyan-cloud-drive/backups/cutover-20261112-090158` 和 Windows `D:\Services\SuyanCloudDrive\backups\linux-cutover-20261112-090158`，保留完整原数据库、服务器密钥、配置和新云盘文件备份。`/opt/suyan-cloud-drive-trial`、`/data/suyan-cloud-drive-trial` 和 Compose 项目 `suyan-cloud-drive-trial` 保留归档，试跑容器已停止。正式数据以 82 最后停写后的备份为准。
+- Linux 正式环境 `DRIVE_IDENTITY_READ_ONLY=0`，保留统一员工目录管理功能。目录凭据为只读挂载的私有 JSON 文件，属主 UID 19555、权限 0400。凭据、状态和 TLS 私钥只保留在服务器。四个正式容器为 `drive`、`portal`、`gateway` 和 `office`。gateway 在 HTTPS 8443 提供网页、分享链接和 WebDAV，portal 在回环 HTTPS 9443 统一登录，8765 后端仅在容器网络内提供服务。
+- 2026-11-12 试跑核对时曾发现 Docker 主服务于北京时间 16:20:45–16:21:17 整体重启，发起方未确认，原始对照记录保留在试跑目录。正式切换前后的原 Seafile、原文档服务、数据库和 SMB 容器 ID、启动时间、重启次数一致。正式文件校验一致。切换后已验证网页、Office、HTTPS WebDAV 和 Windows 临时盘实际挂载，65 项自动化检查通过。
+- 正式 Office 使用 80.252 上独立的 ONLYOFFICE Docs 8.2.1 容器，员工访问端口为内网 HTTPS 8444，持久化目录为 `/opt/suyan-cloud-drive/office`。`LEGACY_PREVIEW_LOOPBACK_CONVERTER=1` 使用 URL 转换生成旧资料的 PDF 预览，源内容仅在转换期间于共享网络的回环端口提供。gateway 复用缓存镜像的 Nginx 二进制，入口仅启动 Nginx。原 Windows ONLYOFFICE 10.0.0 留在 `D:\Services\OnlyOfficeDocs`，JWT 密钥不得写入源码或发布包。
+- 「旧资料库」通过 `LEGACY_SEAFILE_URL` 和 `LEGACY_SEAFILE_CERT_SHA256` 连接原 Seafile，只读浏览和下载。按每个账号原有权限访问。旧端文件、权限和数据库结构由原服务管理；不挂载其内部数据块，不使用共享管理员令牌。
+- 员工可在 `https://192.168.80.252:8443` 用原 Seafile 账号直接登录，按原权限读取个人、共享、公共资料和群组。网页入口使用沿用试跑的内网 HTTPS 证书，私钥只保留在服务器。连接助手使用下方内置证书方案。安装包已预填正式地址，已有电脑盘连接使用该地址重新连接。
+- 2026-11-13 连接助手改用内置公司公开证书方案。`client/company-root.cer` 作为 `CompanyDrive.RootCertificate` 资源打包进客户端，.NET 使用应用内证书链校验，验证服务器名称、有效期和服务器认证用途。rclone 仅对正式地址使用该证书的 PEM 文件。Windows 证书库由用户或 IT 管理，本次用户选择客户端内置证书方案。已验证错误名称、过期、其他 CA、错误用途均被拒绝，真实账号登录和本机 F 盘挂载成功。
+- HTTPS 入口的本地 `admin` 登录通过 `PortalAdmin` 访问完整管理服务，成员、群组、授权等管理功能由内部 8765 后端执行。Seafile 员工登录读取原账号的记录。Office 预览由独立 ONLYOFFICE 生成 PDF，不写回旧文档。预览最大 50 MB，文本最大 2 MB。
+- 工作区原资料统一从「我的资料库」「共享给我的」「公共资料库」和「群组共享」访问，侧栏已移除重复的「旧资料库」入口。原资料支持文件名悬停下划线和只读预览，接口为 `/api/legacy/libraries/{repo}/preview`，使用原账号权限和预览格式检查。工作区代码在 `workspace-ui.js`，与员工原资料页的 `legacy-portal.js` 分别验证。
+- 2026-11-12 性能优化将群组列表数据库连接从 114 次合并为 2 次。账号目录同步在单个事务中批量更新，目录分页最多使用 3 个线程读取并保留分页顺序，支持读取期间总数增长。权限按各请求实时校验。69 项检查通过，优化前后数据在 `work/server-deploy/performance`，服务器回退代码和状态快照在 `/opt/suyan-cloud-drive/updates/performance-*`。
+- 文档容器启动时的插件安装进程曾持续占用约一个 CPU 核。正式与试跑 Compose 均配置 `PLUGINS_ENABLED=false`，跳过启动自动安装任务。当前正式 office 容器的 `/app/ds/run-document-server.sh` 默认值也已改为 false，供现有容器重启时使用。原脚本备份在 `/opt/suyan-cloud-drive/updates/office-plugin-20261112-103924`，后续重建容器由 Compose 环境变量生效。文档服务空闲 CPU 复测约 0.25%，Office 预览、编辑和保存已验证。
+- 员工统一使用 Seafile 账号目录。在正式地址登录后直接进入新工作区，「我的资料库」「共享给我的」「公共资料库」和「群组共享」同时展示新资料和当前账号可访问的原资料。原资料标为只读，仍存放在 Seafile。成员管理中的员工新增、改密及停用作用于 Seafile 目录。新文件可以授权给原员工和原群组。系统账号 `admin` 由新云盘单独管理，原 Seafile 管理员身份不自动授予新云盘管理权限。
+- 统一登录由 `LEGACY_UNIFIED_IDENTITY` 启用。Linux 的 `DRIVE_IDENTITY_CREDENTIAL_FILE` 和 `DRIVE_IDENTITY_MERGES_FILE` 指向 `/private` 中的私有文件，对应服务器 `/opt/suyan-cloud-drive/private`。Windows 留存的旧凭据仍使用 DPAPI。凭据与映射不加入源码和发布包。生产账号数据库为 `/opt/suyan-cloud-drive/state/drive.sqlite3`，原设备连接密码、服务器密钥和部署授权已保留。
+- 开发机用 `start.cmd` 或 `start-preview.cmd` 启动独立数据。开发机的 `state/` 和 `work/server-deploy/state-cutover-*` 是上线迁移备份。使用自定义 `storage.local.json` 时仅配置开发环境的存储，避免与正式服务同时写入同一文件目录。该文件属于忽略文件，不能打入发布包。
+- `work/preview-drive-data` 是迁移前的本地备份，后续开发不要把它当作当前运行数据。保留原有账号和分组，避免重新初始化。
+- 修改后运行与变更相称的检查；服务端检查可用 `.venv\Scripts\python.exe -m pytest tests -q`。
+- 2026-11-13 已部署成员姓名/账号实时搜索和独立危险操作确认框；撤销共享、删除、停用等先确认，取消保留原弹窗输入和选中项。成员搜索复用本页完整目录，不在输入时重复同步。资料库设置须始终保留当前所有者选项，不能依赖 `/people` 默认前 200 条包含所有者。
+- 资料库列表 `libraries_for` 已改为单次调用内批量读取授权，不跨请求缓存权限；61 库样本数据库连接从 432 次降至 2 次。71 项测试和两组浏览器验证通过。正式镜像为 `suyan-cloud-drive:members-confirm-20261113-081650`；首次修改前备份在 `/opt/suyan-cloud-drive/updates/members-confirm-20261113-081233`，补充所有者修复前备份在 `members-confirm-20261113-081650`。仅重建 drive，其他容器未重启。代码审查与验证资料在 `work/ui-search-confirm-20261113/`。
+- 2026-11-13 正式性能更新 `suyan-cloud-drive:performance-20261113-090747` 已验证，备份及旧镜像信息在 `/opt/suyan-cloud-drive/updates/performance-20261113-090747`。仍使用 SQLite WAL。文件写入按资料库加锁，上传分片及完整性校验按任务加锁，涉及两个资料库时按固定顺序取得锁。标签搜索使用索引，文件名搜索可继续分页。批量下载 ZIP 在后台生成，任务不跨服务重启。75 项测试及浏览器验证通过，独立样本和部署记录在 `work/performance-20261113/`。
+- 电脑盘根目录的「原 Seafile」由服务器端 WebDAV 提供，已关联原账号的员工使用同一个连接助手即可浏览。已有文件支持按本人原 Seafile 编辑权限写回，保存前和提交前检查原系统的 `rw` 权限，以用户自己的令牌获取 update-link 并发送至证书指纹固定的更新接口。文件在接收完整后一次提交，历史版本由 Seafile 管理。新增、删除和普通改名通过原 Seafile 操作。Office 保存涉及的临时文件与备份保存在新云盘状态目录的设备隔离暂存区，原文件通过更新接口提交。加密资料库继续通过原 Seafile 打开。
+- 原资料写回正式镜像为 `suyan-cloud-drive:seafile-writeback-20261113-104652`，发布备份在 `/opt/suyan-cloud-drive/updates/seafile-writeback-20261113-104652`。`LEGACY_DAV_WRITEBACK=0` 可将该入口设回只读，默认开启。`legacy_dav_reads` 表保存设备读取的文件版本，旧版本并发保存返回 409，设备撤销后拒绝保存。79 项测试通过，两个独立连接版本冲突与撤销已在正式接口验证，Word、Excel 和文本已通过 F 盘保存后从原 Seafile 下载核对。相关临时验证资料在 `work/seafile-writeback`。
+- Windows 连接助手 0.2.1 改用 rclone WebDAV 模式，缓存判断包含服务器修改时间。两个独立账号的实际 Windows 挂载测试复现旧助手读取等长旧文件，并验证新版重新打开时读取新版。正式镜像 `suyan-cloud-drive:shared-save-20261113-140334` 已提供新安装包，已安装旧版的电脑需覆盖安装，备份位于 `/opt/suyan-cloud-drive/updates/shared-save-20261113-140334`。测试脚本在 `work/shared-save-20261113/`。
+- Windows 连接助手 0.2.2 支持自选本机安装目录，并在启动和挂载结束后清理已识别的失效云盘记录。WebDAV 根目录报告正式文件存储卷的容量。正式镜像 `suyan-cloud-drive:desktop-022-20261114-072911`，原镜像和文件备份在 `/opt/suyan-cloud-drive/updates/desktop-022-20261114-072911`。已验证自选目录解包、临时盘断开及异常退出清理、原 F 盘保持在线并显示真实容量。81 项服务端测试通过。
+- Windows 连接助手 0.2.3 将清理加入安装完成流程，并对已打开的「此电脑」中显示的本应用残留盘符逐个发送移除通知。发送前确认盘符没有活动设备或持久连接，继续保留正常 F 盘。已在保持原窗口打开时验证异常退出和旧 P/Q/Y 图标清理。正式镜像 `suyan-cloud-drive:desktop-023-20261114-073738`，备份位于 `/opt/suyan-cloud-drive/updates/desktop-023-20261114-073738`。
+- 产品显示名为“苏盐新云盘”。授权签发私钥仅存放于 `license-issuer/`，该目录不得进入 Git、Docker 构建或客户发布包。服务端仅分发 `drive/license_public_key.pem`。
+- 当前授权规则为首次部署试用 90 天，到期保留查看和下载、暂停上传与修改。管理员使用签发工具生成的部署绑定激活码续期，签发支持任意有效天数或到期日期。
+- 授权管理菜单、期限、客户名称、部署编号和激活接口仅管理员可见及可访问。普通成员仅接收只读状态等操作权限信息。
+- 网页和客户端采用深蓝灰配色。苏盐原图来自 `D:\IdeaProjects\Contract Review\src\main\resources\static\logo-red.png`，保存在 `drive/static/suyan-logo.png`，图标为 `drive/static/suyan.ico`。成员可修改自己的登录密码，管理员可在成员管理中重置其他成员密码。改密或重置后撤销该账号的网页会话、设备连接和加密库解锁状态。
+- 登录账号支持 2–40 位中文、字母、数字、点、横线或下划线，登录密码最低 6 位。新增成员、自改密码、管理员重置和命令行管理保持一致。弹窗点击外部或按 Esc 均不关闭，用户通过右上角叉号关闭，提交成功后可自动关闭。
+- 2026-11-14 功能回归版本为服务端 0.4.1 和连接助手 0.2.4。回收站文件版本与当前同名路径隔离，快照保存历史和协作记录，跨库移动保留历史和协作记录并撤销原路径授权。批量移动先检查所有目标，打包保留空目录，原样保存文本时保留原始字节。连接助手使用按盘符区分的 UNC 地址，卷名继续显示“苏盐新云盘”。
+- 0.4.1 正式镜像为 `suyan-cloud-drive:functional-fixes-20261114-092353`。功能更新前的数据库和镜像在 `/opt/suyan-cloud-drive/updates/functional-fixes-20261114-092117`，版本接口更新前的备份在 `functional-fixes-20261114-092353`。正式旧镜像与新镜像已在服务器隔离数据上对照验证，89 项本地自动化检查通过，正式迁移保留 40 条版本记录。
+- 连接助手 0.2.5 从资源管理器缓存识别按盘符命名的失效映射，并在挂载进程退出后补查。已验证缓存清理、正常断开和异常退出均释放测试 R 盘，现有 F 盘保持在线。正式镜像为 `suyan-cloud-drive:mount-cleanup-025-20261114-095215`，发布前备份位于 `/opt/suyan-cloud-drive/updates/mount-cleanup-025-20261114-095215`。
+- 连接助手 0.2.6 对确认失效的盘符同步发送移除通知。实测全量刷新「此电脑」可能让旧图标再次出现，因此识别出具体盘符时只通知该盘符。已在同一个打开的窗口确认 R 盘出现，再验证正常断开和异常退出后 R 盘图标消失、F 盘可读。正式镜像及备份标识为 `mount-cleanup-026-20261114-100204`，0.2.6 安装包校验与正式 HTTPS WebDAV 均通过。
+- 服务端 0.4.2 将 WebDAV 列目录的权限批量读取限制在单个 PROPFIND 请求内，网页聚合读取复用线程内短连接。目录扫描复用 stat 和相对路径，网页按服务器每页100项显示，旧 files 接口省略 limit 时仍返回数组。已有进程内文件锁、解锁缓存和任务状态继续由单进程服务管理。正式镜像和发布前备份标识为 `directory-performance-20261114-104749`。
+- 0.4.2 补充扫描优化后的正式镜像为 `suyan-cloud-drive:directory-performance-20261114-105502`，补充前备份在同标识 updates 目录。最终复测记录在 `/opt/suyan-cloud-drive/updates/pressure-20261114-105657`，4324 次业务操作零错误。100文件WebDAV四路并发P95约911ms，工作区16路约540ms。1000文件分页16路P95约3.3秒，旧全量接口约5.2秒，后续优化继续以此为边界。源码部署包为 `releases/company-drive-v0.4.2.zip`。

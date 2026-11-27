@@ -1,0 +1,37 @@
+.venv/
+__pycache__/
+.pytest_cache/
+*.pyc
+data/
+state/
+.env
+storage.local.json
+backups/
+work/
+releases/
+license-issuer/
+license-issuer*
+docs/本地试用说明.md
+
+# Runtime credentials and local service configuration
+.env.*
+!.env.example
+/private/
+/private-storage/
+/tls/
+*.key
+*.pem
+!/drive/license_public_key.pem
+*.p12
+*.pfx
+*.sqlite
+*.sqlite3
+*.sqlite3-*
+*.db
+*.db-*
+*.log
+
+# Installer builds and local screenshots
+/downloads/*
+!/downloads/README.md
+/docs/screenshots/

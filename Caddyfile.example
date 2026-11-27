@@ -1,0 +1,7 @@
+# 示例：将域名替换为自己的域名，并指向服务器公网入口。
+# 这是独立运行 Caddy 时的示例；应用端口只监听 127.0.0.1。
+drive.example.com {
+    reverse_proxy 127.0.0.1:8765 {
+        flush_interval -1
+    }
+}

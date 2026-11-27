@@ -1,0 +1,41 @@
+﻿苏盐新云盘启停命令
+
+适用服务器 192.168.80.252
+访问地址 https://192.168.80.252:8443
+执行位置为服务器的 root 终端。
+
+一、先进入部署目录
+
+cd /opt/suyan-cloud-drive
+
+后续命令均在该目录执行。
+
+二、启动全部服务
+
+docker compose up -d
+
+三、停止全部服务
+
+docker compose stop
+
+四、重启整套服务
+
+依次执行以下两条命令。
+
+docker compose stop
+docker compose up -d
+
+五、查看运行状态
+
+docker compose ps
+
+六、查看实时日志
+
+docker compose logs --tail=100 -f
+
+按 Ctrl+C 退出日志查看。
+
+操作说明
+
+这些命令管理新云盘的 drive、portal、gateway、office 四个容器，原 Seafile 独立运行。
+停止或重启前，先保存正在编辑的文档。

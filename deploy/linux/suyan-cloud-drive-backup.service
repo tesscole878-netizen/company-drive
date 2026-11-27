@@ -1,0 +1,11 @@
+[Unit]
+Description=Back up and verify SuYan Cloud Drive data and configuration
+RequiresMountsFor=/data/suyan-cloud-drive /opt/suyan-cloud-drive/backups
+
+[Service]
+Type=oneshot
+UMask=0077
+Nice=10
+IOSchedulingClass=idle
+TimeoutStartSec=2h
+ExecStart=/usr/bin/python3 /opt/suyan-cloud-drive/operations/backup.py
